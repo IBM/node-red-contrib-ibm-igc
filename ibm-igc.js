@@ -83,7 +83,10 @@ module.exports = function(RED) {
 
     node.on("input", function(msg) {
       const receivedURL = (typeof msg.url === "string") ? msg.url : "";
-      const callURL = receivedURL.substring(receivedURL.indexOf('/ibm/iis/igc-rest'));
+      let callURL = receivedURL;
+      if (receivedURL.indexOf('https://') !== -1) {
+        callURL = receivedURL.substring(receivedURL.indexOf('/ibm/iis/igc-rest'));
+      }
       igcrest.makeRequest('GET', callURL, null, null, null, function(res, resSearch) {
         let err = null;
         if (res.statusCode !== 200) {
@@ -126,14 +129,13 @@ module.exports = function(RED) {
   RED.nodes.registerType("IGC update", IGCUpdate);
 
   function _sendResultsOnPayload(node, err, result) {
-    const msg = {};
+    let results = null;
     if (!err) {
-      msg.payload = result;
+      results = result;
     } else {
-      msg.payload = null;
       node.error(err, err);
     }
-    node.send(msg);
+    node.send(results);
   }
 
 };
