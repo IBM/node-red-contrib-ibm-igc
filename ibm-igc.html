@@ -37,12 +37,13 @@
 </script>
 
 <script type="text/javascript">
+  "use strict";
   RED.nodes.registerType("ibm-igc",{
     category: "config",
     color: "rgb(114, 199, 231)",
     defaults: {
       host: { value: "", required: true },
-      port: { value: "9445", required: true },
+      port: { value: "9445", required: true, validate: RED.validators.number() },
       name: { value: "" }
     },
     credentials: {
@@ -50,7 +51,7 @@
       pass: { type: "password" }
     },
     label: function() {
-      return this.name || this.host;
+      return this.host + ":" + this.port;
     }
   });
 </script>
@@ -105,6 +106,7 @@
 </script>
 
 <script type="text/javascript">
+  "use strict";
   RED.nodes.registerType("IGC search", {
     category: "storage-input",
     color: "rgb(114, 199, 231)",
@@ -161,14 +163,27 @@
   });
 
   function label() {
-    return this.name || this.host || "IGC";
+    return this.name || "IGC";
   }
 </script>
 
 <script type="text/x-red" data-help-name="IGC search">
-  <p>
-    A node for searching metadata in Information Governance Catalog.
-  </p>
+  <p>Searches for metadata in Information Governance Catalog.</p>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">object</span></dt>
+    <dd> the full query to POST to the REST API
+  </dl>
+  <h3>Outputs</h3>
+  <ol class="node-ports">
+    <li>
+      <dl class="message-properties">
+        <dt>results <span class="property-type">object</span></dt>
+        <dd>the set of results for the search, typically with a structure of <code>{ items: [], paging: {} }</code>.</dd>
+      </dl>
+    </li>
+  </ol>
+  <h3>Details</h3>
   <p>
     This uses the POST-based Information Governance Catalog REST API to run
     an arbitrary search, based on the parameters provided in the <code>msg.payload</code>.
@@ -197,19 +212,36 @@
   </p>
   <p>
     to get a listing of the names of all business terms that were modified on
-    or after January 1, 2017 (value provided as UNIX time).  You can find more 
-    information about queries and examples in the <a
-    href="http://www.ibm.com/support/docview.wss?uid=swg27047054&aid=1" target="_blank">
-    Tips, Tricks &amp; Time-Savers Guide</a> and the <a 
-    href="http://www.ibm.com/support/docview.wss?uid=swg27047059&aid=1" target="_blank">
-    Sample Rest API Calls and Use Case Descriptions Guide</a>.
+    or after January 1, 2017 (value provided as UNIX time).
   </p>
+  <p>
+    If no <code>payload</code> is provided, will use any manually-entered
+    Query on the node itself.
+  </p>
+  <h3>References</h3>
+  <ul>
+    <li><a href="http://www.ibm.com/support/docview.wss?uid=swg27047054&aid=1" target="_blank">Tips, Tricks &amp; Time-Savers Guide</a></li>
+    <li><a href="http://www.ibm.com/support/docview.wss?uid=swg27047059&aid=1" target="_blank">Sample Rest API Calls and Use Case Descriptions Guide</a></li>
+  </ul>
 </script>
 
 <script type="text/x-red" data-help-name="IGC get">
-  <p>
-    A node for retrieving metadata from Information Governance Catalog.
-  </p>
+  <p>Retrieves metadata from Information Governance Catalog.</p>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>url <span class="property-type">string</span></dt>
+    <dd> the URL to GET via the REST API
+  </dl>
+  <h3>Outputs</h3>
+  <ol class="node-ports">
+    <li>
+      <dl class="message-properties">
+        <dt>results <span class="property-type">object</span></dt>
+        <dd>the result(s) of the GET operation, typically with a structure of <code>{ items: [], paging: {} }</code>.</dd>
+      </dl>
+    </li>
+  </ol>
+  <h3>Details</h3>
   <p>
     This uses any arbitrary GET-based Information Governance Catalog REST API URL to
     retrieve information from IGC.  The parameter containing the URL is expected to 
@@ -227,9 +259,15 @@
 </script>
 
 <script type="text/x-red" data-help-name="IGC update">
-  <p>
-    A node for updating metadata in Information Governance Catalog.
-  </p>
+  <p>Updates metadata in Information Governance Catalog.</p>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>rid <span class="property-type">string</span></dt>
+    <dd> the unique ID (RID) of the IGC metadata asset to update
+    <dt>update <span class="property-type">object</span></dt>
+    <dd> the update(s) to apply to the metadata asset</dd>
+  </dl>
+  <h3>Details</h3>
   <p>
     This expects a unique IGC identifier ("RID") to specify which specific piece of metadata
     to update; provided as <code>msg.rid</code>.  An additional parameter, <code>msg.update</code>,
