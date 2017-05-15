@@ -67,7 +67,7 @@ The example flow pasted below retrieves key term details (ID, name, short descri
     "type": "function",
     "z": "13a03a0d.38d08e",
     "name": "Split Results",
-    "func": "return [ msg.payload.items, msg.payload.paging ];",
+    "func": "return [ msg.items, msg.paging ];",
     "outputs": "2",
     "noerr": 0,
     "x": 320,
