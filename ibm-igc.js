@@ -32,8 +32,9 @@ module.exports = function(RED) {
     const credentials = this.credentials;
     if ((credentials) && (credentials.hasOwnProperty("username"))) { this.username = credentials.username; }
     if ((credentials) && (credentials.hasOwnProperty("pass"))) { this.password = credentials.pass; }
-    const restConnect = new commons.RestConnection(this.username, this.password, this.host, this.port);
+    const restConnect = new commons.RestConnection(this.username, this.password, this.host, this.port, "", false);
     igcrest.setConnection(restConnect);
+    igcrest.disableThrowingErrors();
   }
   RED.nodes.registerType("ibm-igc", IGCNode, {
     credentials: {
@@ -67,7 +68,7 @@ module.exports = function(RED) {
 
         const receivedQ = (typeof msg.query === "object") ? msg.query : this.query;
         igcrest.search(receivedQ, function(err, result) {
-          _sendResultsOnPayload(node, err, result);
+          _sendResults(node, err, msg, result);
         });
 
       } else if (node.search === "_id_") {
@@ -77,12 +78,12 @@ module.exports = function(RED) {
 
         if (properties.length === 0 || (properties.length === 1 && properties[0] === '')) {
           igcrest.getAssetById(rid, function(err, result) {
-            _sendResultsOnPayload(node, err, result);
+            _sendResults(node, err, msg, result);
           });
         } else {
           const type = (typeof msg.type === "string") ? msg.type : this.ridtype;
           igcrest.getAssetPropertiesById(rid, type, properties, 10, true, function(err, result) {
-            _sendResultsOnPayload(node, err, result);
+            _sendResults(node, err, msg, result);
           });
         }
 
@@ -94,7 +95,7 @@ module.exports = function(RED) {
           callURL = receivedURL.substring(receivedURL.indexOf('/ibm/iis/igc-rest'));
         }
         igcrest.getOther(callURL, 200, function(err, result) {
-          _sendResultsOnPayload(node, err, result);
+          _sendResults(node, err, msg, result);
         });
 
       }
@@ -129,22 +130,22 @@ module.exports = function(RED) {
         const type        = (typeof msg.type === "string") ? msg.type : this.assettype;
         const detailsJSON = (typeof msg.details === "object") ? msg.details : {};
         igcrest.create(type, detailsJSON, function(err, result) {
-          _logResultsOnCompletion(node, err, "Create result", result);
+          _sendResults(node, err, msg, result);
         });
 
-      } else if (node.search === "update") {
+      } else if (node.operation === "update") {
 
         const receivedRID = (typeof msg.rid === "string") ? msg.rid : "";
         const detailsJSON = (typeof msg.details === "object") ? msg.details : {};
         igcrest.update(receivedRID, detailsJSON, function(err, result) {
-          _logResultsOnCompletion(node, err, "Update result", result);
+          _sendResults(node, err, msg, result);
         });
 
-      } else if (node.search === "delete") {
+      } else if (node.operation === "delete") {
 
         const rid = (typeof msg.rid === "string") ? msg.rid : this.rid;
         igcrest.deleteAssetById(rid, function(err, result) {
-          _logResultsOnCompletion(node, err, "Delete result", result);
+          _sendResults(node, err, msg, result);
         });
 
       }
@@ -154,21 +155,11 @@ module.exports = function(RED) {
   }
   RED.nodes.registerType("IGC out", IGCOutNode);
 
-  function _sendResultsOnPayload(node, err, result) {
-    let results = null;
+  function _sendResults(node, err, msg, result) {
     if (!err) {
-      results = result;
+      node.send(result);
     } else {
-      node.error(err, err);
-    }
-    node.send(results);
-  }
-
-  function _logResultsOnCompletion(node, err, msg, result) {
-    if (err) {
-      node.error(err, err);
-    } else {
-      node.log(msg + ": " + result);
+      node.error(err, msg);
     }
   }
 

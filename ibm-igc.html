@@ -105,7 +105,7 @@
     <select id="node-input-operation" style="width:68%;">
         <option value="create">create</option>
         <option value="update">update</option>
-        <option value="delete">remove</option>
+        <option value="delete">delete</option>
     </select>
   </div>
   <div id="node-save-rid-form" class="form-row">
@@ -229,7 +229,7 @@
       details: { value: "" }
     },
     inputs: 1,
-    outputs: 0,
+    outputs: 1,
     icon: "ibm-igc.png",
     align: "right",
     label: label,
@@ -285,15 +285,15 @@
   <h3>Inputs</h3>
   <dl class="message-properties">
     <dt>query <span class="property-type">object</span></dt>
-    <dd> the full query to POST to the REST API, when retrieval type is Complex Query
+    <dd> the full query to POST to the REST API, when retrieval type is Complex Query</dd>
     <dt>url <span class="property-type">string</span></dt>
-    <dd> the URL to GET via the REST API, when retrieval type is URL Passthrough
+    <dd> the URL to GET via the REST API, when retrieval type is URL Passthrough</dd>
     <dt>rid <span class="property-type">string</span></dt>
-    <dd> the unique ID (RID) of the IGC metadata asset to retrieve, when retrieval type is RID
+    <dd> the unique ID (RID) of the IGC metadata asset to retrieve, when retrieval type is RID</dd>
     <dt class="optional">type <span class="property-type">string</span></dt>
-    <dd> the type of asset being requested, when retrieval type is RID (mandatory when properties are specified)
+    <dd> the type of asset being requested, when retrieval type is RID (mandatory when properties are specified)</dd>
     <dt class="optional">properties <span class="property-type">string</span></dt>
-    <dd> an (optional) comma-separated list of properties to retrieve, when retrieval type is RID
+    <dd> an (optional) comma-separated list of properties to retrieve, when retrieval type is RID</dd>
   </dl>
   <h3>Outputs</h3>
   <dl class="message-properties">
@@ -371,16 +371,23 @@
   <h3>Inputs</h3>
   <dl class="message-properties">
     <dt>rid <span class="property-type">string</span></dt>
-    <dd> the unique ID (RID) of the IGC metadata asset to update or delete
+    <dd> the unique ID (RID) of the IGC metadata asset to update or delete</dd>
     <dt class="optional">type <span class="property-type">string</span></dt>
-    <dd> the type of asset to create, when the operation is Create
+    <dd> the type of asset to create, when the operation is Create</dd>
     <dt>details <span class="property-type">object</span></dt>
-    <dd> the detailed set of properties to create or update against the metadata asset
+    <dd> the detailed set of properties to create or update against the metadata asset</dd>
+  </dl>
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">string | object</span></dt>
+    <dd>results of successful operations: the RID (string) for Create, updated properties (object) for Update, and empty for Delete</dd>
   </dl>
   <h3>Details</h3>
   <p>
     This uses the appropriate Information Governance Catalog REST API to make updates to metadata, 
-    whether creating new assets, updating existing assets, or deleting existing assets.
+    whether creating new assets, updating existing assets, or deleting existing assets.  All operations
+    will push their results out to the output port for optional consumption; if any error has occured, 
+    an error will be thrown with the details -- use a Catch node to capture these.
   </p>
   <h4>Create operation</h4>
   <p>
@@ -391,6 +398,9 @@
     are expected in <code>msg.details</code> and the type of asset to create defined by <code>msg.type</code>.
     Note that different assets have different required properties as part of their creation; in general this 
     will require at least the 'name' property.
+  </p>
+  <p>
+    The standard output will be the RID of the created asset, as a string.
   </p>
   <p>
     For example, you can pass a <code>msg.type</code> of 'category' and details like this
@@ -419,6 +429,10 @@
     to change on the asset.
   </p>
   <p>
+    The standard output will be the changed properties of the asset (typically matching the provided 
+    <code>msg.details</code>), as a JSON object.
+  </p>
+  <p>
     For example, you can use the following <code>msg.details</code>:
   </p>
   <p>
@@ -443,5 +457,8 @@
     Like the Update operation, the Delete operation requires a unique IGC identifier ("RID") to specify which 
     specific piece of metadata to delete; provided as <code>msg.rid</code>.  No details object is needed as the 
     entire asset (and all of its properties) will be deleted.
+  </p>
+  <p>
+    On successful deletion, the standard output will be empty (just a payload containing only NodeRED's _msgid).
   </p>
 </script>
