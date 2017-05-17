@@ -8,7 +8,7 @@
   ],
   "dependencies": {
     "ibm-iis-commons": ">=0.5.0",
-    "ibm-igc-rest": ">=0.5.3"
+    "ibm-igc-rest": ">=0.6.0"
   },
   "keywords": [
     "ibm",

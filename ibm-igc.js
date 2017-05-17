@@ -93,14 +93,8 @@ module.exports = function(RED) {
         if (receivedURL.indexOf('https://') !== -1) {
           callURL = receivedURL.substring(receivedURL.indexOf('/ibm/iis/igc-rest'));
         }
-        igcrest.makeRequest('GET', callURL, null, null, null, function(res, resSearch) {
-          let err = null;
-          if (res.statusCode !== 200) {
-            err = "Unsuccessful request " + res.statusCode + "\n" + res.headers;
-            node.error(err);
-            node.error('headers: ', res.headers);
-          }
-          _sendResultsOnPayload(node, err, resSearch);
+        igcrest.getOther(callURL, 200, function(err, result) {
+          _sendResultsOnPayload(node, err, result);
         });
 
       }
