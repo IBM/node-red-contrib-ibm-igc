@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-ibm-igc",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "NodeRED nodes for integrating with IBM Information Governance Catalog",
   "files": [
     "ibm-igc.js",
@@ -8,7 +8,7 @@
   ],
   "dependencies": {
     "ibm-iis-commons": ">=0.5.0",
-    "ibm-igc-rest": ">=0.6.0"
+    "ibm-igc-rest": ">=0.6.2"
   },
   "keywords": [
     "ibm",
