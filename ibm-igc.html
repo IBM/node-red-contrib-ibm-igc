@@ -69,9 +69,12 @@
         <option value="_query_">Complex Query</option>
     </select>
   </div>
-  <div id="node-search-query-form" class="form-row">
+  <div id="node-search-query-form" class="form-row" style="position: relative; margin-bottom: 0px;">
     <label for="node-input-query"><i class="fa fa-search"></i> Query</label>
-    <input type="text" id="node-input-query" placeholder="{'properties': ['name'], 'types': ['term'], 'where': { 'operator': 'and', 'conditions': [{ 'property': 'modified_on', 'operator': '>=', 'value': '1483232400' }] } }" style="width:65%;">
+    <input type="hidden" id="node-input-query" autofocus="autofocus">
+  </div>
+  <div id="node-search-query-editor-form" class="form-row node-text-editor-row">
+    <div style="height: 150px; min-height:75px;" class="node-text-editor" id="node-input-query-editor" ></div>
   </div>
   <div id="node-search-url-form" class="form-row">
     <label for="node-input-url"><i class="fa fa-reply"></i> URL</label>
@@ -116,9 +119,13 @@
     <label for="node-input-assettype"><i class="fa fa-cubes"></i> Type</label>
     <input type="text" id="node-input-assettype" style="width:65%;">
   </div>
-  <div id="node-save-details-form" class="form-row">
+
+  <div id="node-save-details-form" class="form-row" style="position: relative; margin-bottom: 0px;">
     <label for="node-input-details"><i class="fa fa-code"></i> Details</label>
-    <input type="text" id="node-input-details" style="width:65%;">
+    <input type="hidden" id="node-input-details" autofocus="autofocus">
+  </div>
+  <div id="node-save-details-editor-form" class="form-row node-text-editor-row">
+    <div style="height: 150px; min-height:75px;" class="node-text-editor" id="node-input-details-editor" ></div>
   </div>
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -135,8 +142,8 @@
     defaults: {
       name: { value: "" },
       server: { type: "ibm-igc", required: true },
-      search: { value: "_id_", required: true },
-      query: { value: "" },
+      search: { value: "_query_", required: true },
+      query: { value: "{\n\t\"properties\": [\"name\"],\n\t\"types\": [\"term\"],\n\t\"where\": {\n\t\t\"operator\": \"and\",\n\t\t\"conditions\": [{\n\t\t\t\"property\": \"modified_on\",\n\t\t\t\"operator\": \">=\",\n\t\t\t\"value\": \"1483232400\"\n\t\t}]\n\t}\n}" },
       url: { value: "" },
       rid: { value: "" },
       ridtype: { value: "" },
@@ -150,12 +157,17 @@
     labelStyle: function() {
       return this.name ? "node_label_italic" : "";
     },
-    oneditprepare: oneditprepareIn
+    oneditprepare: oneditprepareIn,
+    oneditsave: function() {
+      $("#node-input-query").val(this.editor.getValue());
+      delete this.editor;
+    }
   });
 
   function oneditprepareIn() {
 
     const node = this;
+
     const searchBySelect = $('#node-input-search');
     const propertiesIn   = $('#node-input-ridproperties');
     const ridForm        = $('#node-search-rid-form');
@@ -163,42 +175,43 @@
     const propertiesForm = $('#node-search-ridproperties-form');
     const urlForm        = $('#node-search-url-form');
     const queryForm      = $('#node-search-query-form');
+    const queryEditor    = $('#node-search-query-editor-form');
 
     searchBySelect.change(function() {
       const searchBy = searchBySelect.val();
       if (searchBy === "_id_") {
-        node._def.defaults.rid.required = true;
         makeTypeRequiredIfPropertiesHasValues();
         node._def.defaults.ridproperties.required = false;
-        node._def.defaults.url.required = false;
-        node._def.defaults.query.required = false;
         ridForm.show();
         typeForm.show();
         propertiesForm.show();
         urlForm.hide();
         queryForm.hide();
+        queryEditor.hide();
       } else if (searchBy === "_url_" ) {
-        node._def.defaults.rid.required = false;
         node._def.defaults.ridtype.required = false;
         node._def.defaults.ridproperties.required = false;
-        node._def.defaults.url.required = true;
-        node._def.defaults.query.required = false;
         ridForm.hide();
         typeForm.hide();
         propertiesForm.hide();
         urlForm.show();
         queryForm.hide();
-      } else {
-        node._def.defaults.rid.required = false;
+        queryEditor.hide();
+      } else if (searchBy === "_query_") {
         node._def.defaults.ridtype.required = false;
         node._def.defaults.ridproperties.required = false;
-        node._def.defaults.url.required = false;
-        node._def.defaults.query.required = true;
         ridForm.hide();
         typeForm.hide();
         propertiesForm.hide();
         urlForm.hide();
+        node.editor = RED.editor.createEditor({
+          id: 'node-input-query-editor',
+          mode: 'ace/mode/json',
+          value: $("#node-input-query").val()
+        });
         queryForm.show();
+        queryEditor.show();
+        node.editor.focus();
       }
     });
 
@@ -226,7 +239,7 @@
       operation: { value: "update", required: true },
       rid: { value: "" },
       assettype: { value: "" },
-      details: { value: "" }
+      details: { value: "{\n\t\"short_description\": \"A new short description\"\n}" }
     },
     inputs: 1,
     outputs: 1,
@@ -236,7 +249,11 @@
     labelStyle: function() {
       return this.name ? "node_label_italic" : "";
     },
-    oneditprepare: oneditprepareOut
+    oneditprepare: oneditprepareOut,
+    oneditsave: function() {
+      $("#node-input-details").val(this.editor.getValue());
+      delete this.editor;
+    }
   });
 
   function oneditprepareOut() {
@@ -246,33 +263,37 @@
     const ridForm         = $('#node-save-rid-form');
     const assetTypeForm   = $('#node-save-assettype-form');
     const detailsForm     = $('#node-save-details-form');
+    const detailsEditor   = $('#node-save-details-editor-form');
 
     operationSelect.change(function() {
       const operation = operationSelect.val();
       if (operation === "create") {
-        node._def.defaults.rid.required = false;
-        node._def.defaults.assettype.required = true;
-        node._def.defaults.details.required = true;
         ridForm.hide();
         assetTypeForm.show();
-        detailsForm.show();
+        showDetailsEditor();
       } else if (operation === "update" ) {
-        node._def.defaults.rid.required = true;
-        node._def.defaults.assettype.required = false;
-        node._def.defaults.details.required = true;
         ridForm.show();
         assetTypeForm.hide();
-        detailsForm.show();
+        showDetailsEditor();
       } else if (operation === "delete") {
-        node._def.defaults.rid.required = true;
-        node._def.defaults.assettype.required = false;
-        node._def.defaults.details.required = false;
         ridForm.show();
         assetTypeForm.hide();
         detailsForm.hide();
+        detailsEditor.hide();
       }
     });
 
+    function showDetailsEditor() {
+      node.editor = RED.editor.createEditor({
+        id: 'node-input-details-editor',
+        mode: 'ace/mode/json',
+        value: $("#node-input-details").val()
+      });
+      detailsForm.show();
+      detailsEditor.show();
+      node.editor.focus();
+    }
+ 
   }
 
   function label() {
@@ -307,10 +328,7 @@
   </p>
   <h4>Complex Query option</h4>
   <p>
-    Using the Complex Query option, you can run an arbitrary search, based on the parameters provided in the <code>msg.query</code>.
-  </p>
-  <p>
-    For example, you can pass a query like this (<code>msg.query</code>'s entire contents as follows):
+    Using the Complex Query option, you can run an arbitrary search.  For example, you can pass a query like this:
   </p>
   <p>
     <code>
@@ -336,17 +354,16 @@
     or after January 1, 2017 (value provided as UNIX time).
   </p>
   <p>
-    If no <code>msg.query</code> is provided, will use any manually-entered
-    Query on the node itself.
+    If Query is empty, will look for the query in <code>msg.query</code>.
   </p>
   <h4>URL Passthrough option</h4>
   <p>
     Using the URL Passthrough mode allows you to invoke any arbitrary GET-based Information Governance Catalog
     REST API URL.  For example, you can pass any URL returned by a previous query's <code>next</code> property
-    (for pagination), or the <code>_url</code> property (to get more details on that particular asset).  The 
-    parameter containing the URL is expected to be <code>msg.url</code>.
+    (for pagination), or the <code>_url</code> property (to get more details on that particular asset).
   </p>
   <p>
+    If URL is empty, will look for the URL in <code>msg.url</code>.
     (Note: if specific host details are supplied in the URL they will be overridden by the Server
     selected via configuration -- this is necessary to ensure credentials are passed appropriately).
   </p>
@@ -355,9 +372,12 @@
     Using the RID option you can retrieve a single asset's details by its unique Information Governance Catalog ID (RID).
     You can also (optionally) provide a list of specific properties to retrieve for the asset: in general this is a good
     practice, as it is more efficient than retrieving all properties.  Note that when doing so, specifying the type of the 
-    asset then also becomes mandatory.  The parameter containing the RID is expected to be
-    <code>msg.rid</code> while any optional properties should be in an array as <code>msg.properties</code> and the type 
-    of the asset being retrieved should be in <code>msg.type</code>.
+    asset then also becomes mandatory.
+  </p>
+  <p>
+    If RID is empty, will look for the RID as a string in <code>msg.rid</code>; if Properties is empty, will look for
+    properties as an array in <code>msg.properties</code>; if Type is empty will look for the type as a string in 
+    <code>msg.type</code>.
   </p>
   <h3>References</h3>
   <ul>
@@ -394,17 +414,15 @@
     The Create operation should only be used when an asset does not already exist in IGC with the 
     details that need to be stored.  If the asset already exists, and you simply wish to set some 
     additional properties on the asset (or replace existing ones), use the Update operation instead.
-    Using the Create operation, the detailed set of properties to use in the creation of the asset 
-    are expected in <code>msg.details</code> and the type of asset to create defined by <code>msg.type</code>.
-    Note that different assets have different required properties as part of their creation; in general this 
-    will require at least the 'name' property.
+    Using the Create operation, you need to provide both the Type of the asset to create and the Details
+    of the property values to set within it.  Note that different assets have different required properties 
+    as part of their creation; in general this will require at least the 'name' property.
   </p>
   <p>
     The standard output will be the RID of the created asset, as a string.
   </p>
   <p>
-    For example, you can pass a <code>msg.type</code> of 'category' and details like this
-    (<code>msg.details</code>'s entire contents as follows):
+    For example, use a Type of 'category' and provide Details like this:
   </p>
   <p>
     <code>
@@ -417,23 +435,22 @@
     to create a new top-level category named 'Test Category'.
   </p>
   <p>
-    If no <code>msg.details</code> or <code>msg.type</code> is provided, will use any manually-entered
-    Details / Type on the node itself.
+    If Type is empty, will look for the type as a string in <code>msg.type</code>; if Details is empty, 
+    will look for the detailed properties as a JSON object in <code>msg.details</code>.
   </p>
   <h4>Update operation</h4>
   <p>
     The Update operation expects a unique IGC identifier ("RID") to specify which specific piece of metadata
-    to update; provided as <code>msg.rid</code>.  An additional parameter, <code>msg.details</code>,
-    is also needed to define what on that piece of metadata should be updated.  This second 
+    to update.  Details are also needed to define what on that piece of metadata should be updated.  This second 
     parameter is expected to be a JSON object, and should contain only the properties that need
     to change on the asset.
   </p>
   <p>
     The standard output will be the changed properties of the asset (typically matching the provided 
-    <code>msg.details</code>), as a JSON object.
+    Details), as a JSON object.
   </p>
   <p>
-    For example, you can use the following <code>msg.details</code>:
+    For example, you can use the following Details:
   </p>
   <p>
     <code>
@@ -448,17 +465,25 @@
   </p>
   <p>
     to update the short description of the piece of metadata, and also add (append) two new labels.  
-    Note that related items must also be specified by their RID; the other mode that is likely of
-    use is <code>replace</code>, which will overwrite any existing relationships (and if you provide
-    an empty array, will remove all existing relationships).
+    Note:
+    <ul>
+      <li>related items must also be specified by their RID</li>
+      <li>using <code>replace</code> as the mode will overwrite any existing relationships (and if you provide an empty array, will remove all existing relationships).</li>
+    </ul>
+  </p>
+  <p>
+    If RID is empty, will look for the RID as a string in <code>msg.rid</code>; if Details is empty,
+    will look for the detailed properties as a JSON object in <code>msg.details</code>.
   </p>
   <h4>Delete operation</h4>
   <p>
     Like the Update operation, the Delete operation requires a unique IGC identifier ("RID") to specify which 
-    specific piece of metadata to delete; provided as <code>msg.rid</code>.  No details object is needed as the 
-    entire asset (and all of its properties) will be deleted.
+    specific piece of metadata to delete.  No details object is needed as the entire asset (and all of its properties) will be deleted.
   </p>
   <p>
     On successful deletion, the standard output will be empty (just a payload containing only NodeRED's _msgid).
+  </p>
+  <p>
+    If RID is empty, will look for the RID as a string in <code>msg.rid</code>.
   </p>
 </script>
