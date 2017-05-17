@@ -66,15 +66,20 @@ module.exports = function(RED) {
 
       if (node.search === "_query_") {
 
-        const receivedQ = (typeof msg.query === "object") ? msg.query : this.query;
-        igcrest.search(receivedQ, function(err, result) {
+        const qToRun = (typeof this.query === 'string' && this.query !== '') ? JSON.parse(this.query) : msg.query;
+        igcrest.search(qToRun, function(err, result) {
           _sendResults(node, err, msg, result);
         });
 
       } else if (node.search === "_id_") {
 
-        const rid        = (typeof msg.rid === "string") ? msg.rid : this.rid;
-        const properties = Array.isArray(msg.properties) ? msg.properties : this.ridproperties.split(",").map(item=>item.trim());
+        const rid = (typeof this.rid === 'string' && this.rid !== '') ? this.rid : msg.rid;
+        let properties = [];
+        if (typeof this.ridproperties === 'string' && this.ridproperties !== '') {
+          properties = this.ridproperties.split(",").map(item=>item.trim());
+        } else if (Array.isArray(msg.properties)) {
+          properties = msg.properties;
+        }
 
         if (properties.length === 0 || (properties.length === 1 && properties[0] === '')) {
           igcrest.getAssetById(rid, function(err, result) {
@@ -89,10 +94,10 @@ module.exports = function(RED) {
 
       } else if (node.search === "_url_") {
 
-        const receivedURL = (typeof msg.url === "string") ? msg.url : this.url;
-        let callURL = receivedURL;
-        if (receivedURL.indexOf('https://') !== -1) {
-          callURL = receivedURL.substring(receivedURL.indexOf('/ibm/iis/igc-rest'));
+        let callURL = (typeof this.url === 'string' && this.url !== '') ? this.url : msg.url;
+
+        if (callURL.indexOf('https://') !== -1) {
+          callURL = callURL.substring(callURL.indexOf('/ibm/iis/igc-rest'));
         }
         igcrest.getOther(callURL, 200, function(err, result) {
           _sendResults(node, err, msg, result);
@@ -127,23 +132,23 @@ module.exports = function(RED) {
 
       if (node.operation === "create") {
 
-        const type        = (typeof msg.type === "string") ? msg.type : this.assettype;
-        const detailsJSON = (typeof msg.details === "object") ? msg.details : {};
+        const type = (typeof this.assettype === 'string' && this.assettype !== '') ? this.assettype : msg.type;
+        const detailsJSON = (typeof this.details === 'string' && this.details !== '') ? JSON.parse(this.details) : msg.details;
         igcrest.create(type, detailsJSON, function(err, result) {
           _sendResults(node, err, msg, result);
         });
 
       } else if (node.operation === "update") {
 
-        const receivedRID = (typeof msg.rid === "string") ? msg.rid : "";
-        const detailsJSON = (typeof msg.details === "object") ? msg.details : {};
-        igcrest.update(receivedRID, detailsJSON, function(err, result) {
+        const rid = (typeof this.rid === 'string' && this.rid !== '') ? this.rid : msg.rid;
+        const detailsJSON = (typeof this.details === 'string' && this.details !== '') ? JSON.parse(this.details) : msg.details;
+        igcrest.update(rid, detailsJSON, function(err, result) {
           _sendResults(node, err, msg, result);
         });
 
       } else if (node.operation === "delete") {
 
-        const rid = (typeof msg.rid === "string") ? msg.rid : this.rid;
+        const rid = (typeof this.rid === 'string' && this.rid !== '') ? this.rid : msg.rid;
         igcrest.deleteAssetById(rid, function(err, result) {
           _sendResults(node, err, msg, result);
         });
