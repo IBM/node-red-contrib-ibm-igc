@@ -56,29 +56,38 @@
   });
 </script>
 
-<script type="text/x-red" data-template-name="IGC search">
+<script type="text/x-red" data-template-name="IGC in">
   <div class="form-row" id="node-input-external-details">
     <label for="node-input-server"><i class="fa fa-bookmark"></i> Server</label>
     <input type="text" id="node-input-server">
   </div>
   <div class="form-row">
+    <label for="node-input-search"><i class="fa fa-search"></i> Retrieve by</label>
+    <select id="node-input-search" style="width:68%;">
+        <option value="_id_">RID</option>
+        <option value="_url_">URL Passthrough</option>
+        <option value="_query_">Complex Query</option>
+    </select>
+  </div>
+  <div id="node-search-query-form" class="form-row">
     <label for="node-input-query"><i class="fa fa-search"></i> Query</label>
-    <input type="text" id="node-input-query" placeholder="{}" style="width:65%;">
+    <input type="text" id="node-input-query" placeholder="{'properties': ['name'], 'types': ['term'], 'where': { 'operator': 'and', 'conditions': [{ 'property': 'modified_on', 'operator': '>=', 'value': '1483232400' }] } }" style="width:65%;">
   </div>
-  <div class="form-row">
-    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
-    <input type="text" id="node-input-name" placeholder="Name" style="width:65%;">
-  </div>
-</script>
-
-<script type="text/x-red" data-template-name="IGC get">
-  <div class="form-row" id="node-input-external-details">
-    <label for="node-input-server"><i class="fa fa-bookmark"></i> Server</label>
-    <input type="text" id="node-input-server">
-  </div>
-  <div class="form-row">
+  <div id="node-search-url-form" class="form-row">
     <label for="node-input-url"><i class="fa fa-reply"></i> URL</label>
-    <input type="text" id="node-input-url" style="width:65%;">
+    <input type="text" id="node-input-url" placeholder="/ibm/iis/igc-rest/v1/assets/f4951817.e469fa50.kai5lu1ko.1ndscq5.0s5v4b.ql8e8cmignkcq89ic0ke4" style="width:65%;">
+  </div>
+  <div id="node-search-rid-form" class="form-row">
+    <label for="node-input-rid"><i class="fa fa-barcode"></i> RID</label>
+    <input type="text" id="node-input-rid" placeholder="f4951817.e469fa50.kai5lu1ko.1ndscq5.0s5v4b.ql8e8cmignkcq89ic0ke4" style="width:65%;">
+  </div>
+  <div id="node-search-ridtype-form" class="form-row">
+    <label for="node-input-ridtype"><i class="fa fa-cubes"></i> Type</label>
+    <input type="text" id="node-input-ridtype" placeholder="term" style="width:65%;">
+  </div>
+  <div id="node-search-ridproperties-form" class="form-row">
+    <label for="node-input-ridproperties"><i class="fa fa-check-square-o"></i> Properties</label>
+    <input type="text" id="node-input-ridproperties" placeholder="name, short_description" style="width:65%;">
   </div>
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -86,18 +95,30 @@
   </div>
 </script>
 
-<script type="text/x-red" data-template-name="IGC update">
+<script type="text/x-red" data-template-name="IGC out">
   <div class="form-row" id="node-input-external-details">
     <label for="node-input-server"><i class="fa fa-bookmark"></i> Server</label>
     <input type="text" id="node-input-server">
   </div>
   <div class="form-row">
+    <label for="node-input-operation"><i class="fa fa-wrench"></i> Operation</label>
+    <select id="node-input-operation" style="width:68%;">
+        <option value="create">create</option>
+        <option value="update">update</option>
+        <option value="delete">remove</option>
+    </select>
+  </div>
+  <div id="node-save-rid-form" class="form-row">
     <label for="node-input-rid"><i class="fa fa-barcode"></i> RID</label>
     <input type="text" id="node-input-rid" style="width:65%;">
   </div>
-  <div class="form-row">
-    <label for="node-input-update"><i class="fa fa-save"></i> Update</label>
-    <input type="text" id="node-input-update" style="width:65%;">
+  <div id="node-save-assettype-form" class="form-row">
+    <label for="node-input-assettype"><i class="fa fa-cubes"></i> Type</label>
+    <input type="text" id="node-input-assettype" style="width:65%;">
+  </div>
+  <div id="node-save-details-form" class="form-row">
+    <label for="node-input-details"><i class="fa fa-code"></i> Details</label>
+    <input type="text" id="node-input-details" style="width:65%;">
   </div>
   <div class="form-row">
     <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
@@ -107,13 +128,19 @@
 
 <script type="text/javascript">
   "use strict";
-  RED.nodes.registerType("IGC search", {
+  
+  RED.nodes.registerType("IGC in", {
     category: "storage-input",
     color: "rgb(114, 199, 231)",
     defaults: {
       name: { value: "" },
-      server: { type:"ibm-igc", required: true },
-      query: { value: "" }
+      server: { type: "ibm-igc", required: true },
+      search: { value: "_id_", required: true },
+      query: { value: "" },
+      url: { value: "" },
+      rid: { value: "" },
+      ridtype: { value: "" },
+      ridproperties: { value: "" }
     },
     inputs: 1,
     outputs: 1,
@@ -122,35 +149,84 @@
     label: label,
     labelStyle: function() {
       return this.name ? "node_label_italic" : "";
-    }
-  });
-
-  RED.nodes.registerType("IGC get", {
-    category: "storage-input",
-    color: "rgb(114, 199, 231)",
-    defaults: {
-      name: { value: "" },
-      server: { type:"ibm-igc", required: true },
-      url: { value: "" }
     },
-    inputs: 1,
-    outputs: 1,
-    icon: "ibm-igc.png",
-    align: "left",
-    label: label,
-    labelStyle: function() {
-      return this.name ? "node_label_italic" : "";
-    }
+    oneditprepare: oneditprepareIn
   });
 
-  RED.nodes.registerType("IGC update", {
+  function oneditprepareIn() {
+
+    const node = this;
+    const searchBySelect = $('#node-input-search');
+    const propertiesIn   = $('#node-input-ridproperties');
+    const ridForm        = $('#node-search-rid-form');
+    const typeForm       = $('#node-search-ridtype-form');
+    const propertiesForm = $('#node-search-ridproperties-form');
+    const urlForm        = $('#node-search-url-form');
+    const queryForm      = $('#node-search-query-form');
+
+    searchBySelect.change(function() {
+      const searchBy = searchBySelect.val();
+      if (searchBy === "_id_") {
+        node._def.defaults.rid.required = true;
+        makeTypeRequiredIfPropertiesHasValues();
+        node._def.defaults.ridproperties.required = false;
+        node._def.defaults.url.required = false;
+        node._def.defaults.query.required = false;
+        ridForm.show();
+        typeForm.show();
+        propertiesForm.show();
+        urlForm.hide();
+        queryForm.hide();
+      } else if (searchBy === "_url_" ) {
+        node._def.defaults.rid.required = false;
+        node._def.defaults.ridtype.required = false;
+        node._def.defaults.ridproperties.required = false;
+        node._def.defaults.url.required = true;
+        node._def.defaults.query.required = false;
+        ridForm.hide();
+        typeForm.hide();
+        propertiesForm.hide();
+        urlForm.show();
+        queryForm.hide();
+      } else {
+        node._def.defaults.rid.required = false;
+        node._def.defaults.ridtype.required = false;
+        node._def.defaults.ridproperties.required = false;
+        node._def.defaults.url.required = false;
+        node._def.defaults.query.required = true;
+        ridForm.hide();
+        typeForm.hide();
+        propertiesForm.hide();
+        urlForm.hide();
+        queryForm.show();
+      }
+    });
+
+    propertiesIn.change(function() {
+      makeTypeRequiredIfPropertiesHasValues();
+    });
+
+    function makeTypeRequiredIfPropertiesHasValues() {
+      const properties = propertiesIn.val();
+      if (typeof properties !== 'undefined' && properties !== null && properties !== "") {
+        node._def.defaults.ridtype.required = true;
+      } else {
+        node._def.defaults.ridtype.required = false;
+      }
+    }
+
+  }
+
+  RED.nodes.registerType("IGC out", {
     category: "storage-output",
     color: "rgb(114, 199, 231)",
     defaults: {
       name: { value: "" },
-      server: { type:"ibm-igc", required: true },
+      server: { type: "ibm-igc", required: true },
+      operation: { value: "update", required: true },
       rid: { value: "" },
-      update: { value: "" }
+      assettype: { value: "" },
+      details: { value: "" }
     },
     inputs: 1,
     outputs: 0,
@@ -159,33 +235,82 @@
     label: label,
     labelStyle: function() {
       return this.name ? "node_label_italic" : "";
-    }
+    },
+    oneditprepare: oneditprepareOut
   });
+
+  function oneditprepareOut() {
+
+    const node = this;
+    const operationSelect = $('#node-input-operation');
+    const ridForm         = $('#node-save-rid-form');
+    const assetTypeForm   = $('#node-save-assettype-form');
+    const detailsForm     = $('#node-save-details-form');
+
+    operationSelect.change(function() {
+      const operation = operationSelect.val();
+      if (operation === "create") {
+        node._def.defaults.rid.required = false;
+        node._def.defaults.assettype.required = true;
+        node._def.defaults.details.required = true;
+        ridForm.hide();
+        assetTypeForm.show();
+        detailsForm.show();
+      } else if (operation === "update" ) {
+        node._def.defaults.rid.required = true;
+        node._def.defaults.assettype.required = false;
+        node._def.defaults.details.required = true;
+        ridForm.show();
+        assetTypeForm.hide();
+        detailsForm.show();
+      } else if (operation === "delete") {
+        node._def.defaults.rid.required = true;
+        node._def.defaults.assettype.required = false;
+        node._def.defaults.details.required = false;
+        ridForm.show();
+        assetTypeForm.hide();
+        detailsForm.hide();
+      }
+    });
+
+  }
 
   function label() {
     return this.name || "IGC";
   }
 </script>
 
-<script type="text/x-red" data-help-name="IGC search">
-  <p>Searches for metadata in Information Governance Catalog.</p>
+<script type="text/x-red" data-help-name="IGC in">
+  <p>Retrieves metadata from Information Governance Catalog.</p>
   <h3>Inputs</h3>
   <dl class="message-properties">
-    <dt>payload <span class="property-type">object</span></dt>
-    <dd> the full query to POST to the REST API
+    <dt>query <span class="property-type">object</span></dt>
+    <dd> the full query to POST to the REST API, when retrieval type is Complex Query
+    <dt>url <span class="property-type">string</span></dt>
+    <dd> the URL to GET via the REST API, when retrieval type is URL Passthrough
+    <dt>rid <span class="property-type">string</span></dt>
+    <dd> the unique ID (RID) of the IGC metadata asset to retrieve, when retrieval type is RID
+    <dt class="optional">type <span class="property-type">string</span></dt>
+    <dd> the type of asset being requested, when retrieval type is RID (mandatory when properties are specified)
+    <dt class="optional">properties <span class="property-type">string</span></dt>
+    <dd> an (optional) comma-separated list of properties to retrieve, when retrieval type is RID
   </dl>
   <h3>Outputs</h3>
   <dl class="message-properties">
     <dt>results <span class="property-type">object</span></dt>
-    <dd>the set of results for the search, typically with a structure of <code>{ items: [], paging: {} }</code>.</dd>
+    <dd>the set of results for the retrieval, typically with a structure of <code>{ items: [], paging: {} }</code>, though the paging portion may be missing if there are not multiple results to page through (i.e. when retrieving by RID).</dd>
   </dl>
   <h3>Details</h3>
   <p>
-    This uses the POST-based Information Governance Catalog REST API to run
-    an arbitrary search, based on the parameters provided in the <code>msg.payload</code>.
+    This uses the both GET- and POST-based Information Governance Catalog REST APIs to retrieve
+    metadata using the most efficient means possible.
+  </p>
+  <h4>Complex Query option</h4>
+  <p>
+    Using the Complex Query option, you can run an arbitrary search, based on the parameters provided in the <code>msg.query</code>.
   </p>
   <p>
-    For example, you can pass a query like this (<code>msg.payload</code>'s entire contents as follows):
+    For example, you can pass a query like this (<code>msg.query</code>'s entire contents as follows):
   </p>
   <p>
     <code>
@@ -211,8 +336,28 @@
     or after January 1, 2017 (value provided as UNIX time).
   </p>
   <p>
-    If no <code>payload</code> is provided, will use any manually-entered
+    If no <code>msg.query</code> is provided, will use any manually-entered
     Query on the node itself.
+  </p>
+  <h4>URL Passthrough option</h4>
+  <p>
+    Using the URL Passthrough mode allows you to invoke any arbitrary GET-based Information Governance Catalog
+    REST API URL.  For example, you can pass any URL returned by a previous query's <code>next</code> property
+    (for pagination), or the <code>_url</code> property (to get more details on that particular asset).  The 
+    parameter containing the URL is expected to be <code>msg.url</code>.
+  </p>
+  <p>
+    (Note: if specific host details are supplied in the URL they will be overridden by the Server
+    selected via configuration -- this is necessary to ensure credentials are passed appropriately).
+  </p>
+  <h4>RID option</h4>
+  <p>
+    Using the RID option you can retrieve a single asset's details by its unique Information Governance Catalog ID (RID).
+    You can also (optionally) provide a list of specific properties to retrieve for the asset: in general this is a good
+    practice, as it is more efficient than retrieving all properties.  Note that when doing so, specifying the type of the 
+    asset then also becomes mandatory.  The parameter containing the RID is expected to be
+    <code>msg.rid</code> while any optional properties should be in an array as <code>msg.properties</code> and the type 
+    of the asset being retrieved should be in <code>msg.type</code>.
   </p>
   <h3>References</h3>
   <ul>
@@ -221,53 +366,60 @@
   </ul>
 </script>
 
-<script type="text/x-red" data-help-name="IGC get">
-  <p>Retrieves metadata from Information Governance Catalog.</p>
-  <h3>Inputs</h3>
-  <dl class="message-properties">
-    <dt>url <span class="property-type">string</span></dt>
-    <dd> the URL to GET via the REST API
-  </dl>
-  <h3>Outputs</h3>
-  <dl class="message-properties">
-    <dt>results <span class="property-type">object</span></dt>
-    <dd>the result(s) of the GET operation, typically with a structure of <code>{ items: [], paging: {} }</code>.</dd>
-  </dl>
-  <h3>Details</h3>
-  <p>
-    This uses any arbitrary GET-based Information Governance Catalog REST API URL to
-    retrieve information from IGC.  The parameter containing the URL is expected to 
-    be <code>msg.url</code>
-  </p>
-  <p>
-    For example, you can pass any URL returned by a previous query's <code>next</code> property
-    (for pagination), or the <code>_url</code> property (to get more details on that particular
-    asset).
-  </p>
-  <p>
-    (Note: the specific host details supplied in the URL will be overridden by the Server
-    selected via configuration -- necessary to ensure credentials are passed appropriately).
-  </p>
-</script>
-
-<script type="text/x-red" data-help-name="IGC update">
-  <p>Updates metadata in Information Governance Catalog.</p>
+<script type="text/x-red" data-help-name="IGC out">
+  <p>Stores, updates or removes metadata from Information Governance Catalog.</p>
   <h3>Inputs</h3>
   <dl class="message-properties">
     <dt>rid <span class="property-type">string</span></dt>
-    <dd> the unique ID (RID) of the IGC metadata asset to update
-    <dt>update <span class="property-type">object</span></dt>
-    <dd> the update(s) to apply to the metadata asset</dd>
+    <dd> the unique ID (RID) of the IGC metadata asset to update or delete
+    <dt class="optional">type <span class="property-type">string</span></dt>
+    <dd> the type of asset to create, when the operation is Create
+    <dt>details <span class="property-type">object</span></dt>
+    <dd> the detailed set of properties to create or update against the metadata asset
   </dl>
   <h3>Details</h3>
   <p>
-    This expects a unique IGC identifier ("RID") to specify which specific piece of metadata
-    to update; provided as <code>msg.rid</code>.  An additional parameter, <code>msg.update</code>,
-    is also needed to define what on that piece of metadata should be updated.  This second 
-    parameter is expected to be a JSON object.
+    This uses the appropriate Information Governance Catalog REST API to make updates to metadata, 
+    whether creating new assets, updating existing assets, or deleting existing assets.
+  </p>
+  <h4>Create operation</h4>
+  <p>
+    The Create operation should only be used when an asset does not already exist in IGC with the 
+    details that need to be stored.  If the asset already exists, and you simply wish to set some 
+    additional properties on the asset (or replace existing ones), use the Update operation instead.
+    Using the Create operation, the detailed set of properties to use in the creation of the asset 
+    are expected in <code>msg.details</code> and the type of asset to create defined by <code>msg.type</code>.
+    Note that different assets have different required properties as part of their creation; in general this 
+    will require at least the 'name' property.
   </p>
   <p>
-    For example, you can use the following <code>msg.update</code>:
+    For example, you can pass a <code>msg.type</code> of 'category' and details like this
+    (<code>msg.details</code>'s entire contents as follows):
+  </p>
+  <p>
+    <code>
+    {
+      "name": "Test Category"
+    }
+    </code>
+  </p>
+  <p>
+    to create a new top-level category named 'Test Category'.
+  </p>
+  <p>
+    If no <code>msg.details</code> or <code>msg.type</code> is provided, will use any manually-entered
+    Details / Type on the node itself.
+  </p>
+  <h4>Update operation</h4>
+  <p>
+    The Update operation expects a unique IGC identifier ("RID") to specify which specific piece of metadata
+    to update; provided as <code>msg.rid</code>.  An additional parameter, <code>msg.details</code>,
+    is also needed to define what on that piece of metadata should be updated.  This second 
+    parameter is expected to be a JSON object, and should contain only the properties that need
+    to change on the asset.
+  </p>
+  <p>
+    For example, you can use the following <code>msg.details</code>:
   </p>
   <p>
     <code>
@@ -285,5 +437,11 @@
     Note that related items must also be specified by their RID; the other mode that is likely of
     use is <code>replace</code>, which will overwrite any existing relationships (and if you provide
     an empty array, will remove all existing relationships).
+  </p>
+  <h4>Delete operation</h4>
+  <p>
+    Like the Update operation, the Delete operation requires a unique IGC identifier ("RID") to specify which 
+    specific piece of metadata to delete; provided as <code>msg.rid</code>.  No details object is needed as the 
+    entire asset (and all of its properties) will be deleted.
   </p>
 </script>
