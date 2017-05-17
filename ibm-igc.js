@@ -73,9 +73,9 @@ module.exports = function(RED) {
       } else if (node.search === "_id_") {
 
         const rid        = (typeof msg.rid === "string") ? msg.rid : this.rid;
-        const properties = Array.isArray(msg.properties) ? msg.properties : this.ridproperties.split(",");
+        const properties = Array.isArray(msg.properties) ? msg.properties : this.ridproperties.split(",").map(item=>item.trim());
 
-        if (properties.length === 0) {
+        if (properties.length === 0 || (properties.length === 1 && properties[0] === '')) {
           igcrest.getAssetById(rid, function(err, result) {
             _sendResultsOnPayload(node, err, result);
           });
