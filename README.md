@@ -31,128 +31,165 @@ The example flow pasted below retrieves key term details (ID, name, short descri
 ```
 [
   {
-    "id": "13a03a0d.38d08e",
+    "id": "8dd27fec.9c3dc",
     "type": "tab",
-    "label": "Get All Terms and Related Assets"
+    "label": "Get Terms and Related Assets"
   },
   {
-    "id": "8747d52d.80cfe",
+    "id": "8ed2d18a.14748",
     "type": "ibm-igc",
     "z": "",
     "host": "cgroteDL",
     "port": "9445",
-    "name": "cgroteDL"
+    "name": ""
   },
   {
-    "id": "988f0c55.a11a88",
+    "id": "e5403847.44885",
+    "type": "IGC in",
+    "z": "8dd27fec.9c3dc",
+    "name": "Search IGC",
+    "server": "8ed2d18a.14748",
+    "search": "_query_",
+    "query": "",
+    "url": "",
+    "rid": "",
+    "ridtype": "",
+    "ridproperties": "",
+    "x": 157,
+    "y": 156,
+    "wires": [
+      [
+        "1adade39.6d3afa"
+      ]
+    ]
+  },
+  {
+    "id": "f9394507.c723c",
     "type": "inject",
-    "z": "13a03a0d.38d08e",
+    "z": "8dd27fec.9c3dc",
     "name": "Query",
     "topic": "",
-    "payload": "{       \"properties\": [\"name\", \"short_description\", \"long_description\", \"assigned_assets\"],       \"types\": [\"term\"],       \"where\":       {         \"operator\": \"and\",         \"conditions\": [           {             \"property\": \"modified_on\",             \"operator\": \">=\",             \"value\": \"1483232400\"           }         ]       }     }",
+    "payload": "{     \"properties\": [       \"name\",       \"short_description\",       \"long_description\",       \"assigned_assets\"     ],     \"types\": [       \"term\"     ],     \"where\": {       \"operator\": \"and\",       \"conditions\": [         {           \"property\": \"modified_on\",           \"operator\": \">=\",           \"value\": \"1483232400\"         }       ]     }   }",
     "payloadType": "json",
     "repeat": "",
     "crontab": "",
     "once": false,
-    "x": 84,
-    "y": 177,
+    "x": 91,
+    "y": 65,
     "wires": [
       [
-        "f6a6970f.8a814"
+        "cf38780b.47dd28"
       ]
     ]
   },
   {
-    "id": "f216a1c1.072f9",
+    "id": "1adade39.6d3afa",
     "type": "function",
-    "z": "13a03a0d.38d08e",
+    "z": "8dd27fec.9c3dc",
     "name": "Split Results",
     "func": "return [ msg.items, msg.paging ];",
     "outputs": "2",
     "noerr": 0,
-    "x": 320,
-    "y": 313,
+    "x": 284,
+    "y": 203,
     "wires": [
       [
-        "8bfeda72.05efc"
+        "ec20d121.4fd68"
       ],
       [
-        "2873f469.e8f63c"
+        "809e88cc.d933f8"
       ]
     ]
   },
   {
-    "id": "2873f469.e8f63c",
+    "id": "809e88cc.d933f8",
     "type": "function",
-    "z": "13a03a0d.38d08e",
+    "z": "8dd27fec.9c3dc",
     "name": "Next page?",
     "func": "if (msg.hasOwnProperty('next')) {\n    const payload = {};\n    payload.url = msg.next;\n    node.send(payload);\n}\n",
     "outputs": 1,
     "noerr": 0,
-    "x": 496,
-    "y": 349,
+    "x": 459,
+    "y": 223,
     "wires": [
       [
-        "df5716f.c4d9368"
+        "235b3e32.ac6d22"
       ]
     ]
   },
   {
-    "id": "8bfeda72.05efc",
+    "id": "ec20d121.4fd68",
     "type": "function",
-    "z": "13a03a0d.38d08e",
+    "z": "8dd27fec.9c3dc",
     "name": "Parse details",
-    "func": "const payload = {};\n\npayload.id = msg._id;\npayload.name = msg.name;\npayload.short_desc = msg.hasOwnProperty('short_description') ? msg.short_description : \"\";\npayload.long_desc  = msg.hasOwnProperty('long_description') ? msg.long_description : \"\";\npayload.assigned_assets = [];\n\nif (msg.hasOwnProperty('assigned_assets')) {\n    for (let i = 0; i < msg.assigned_assets.items.length; i++) {\n        const itm = msg.assigned_assets.items[i];\n        payload.assigned_assets.push({ \"type\": itm._type, \"name\": itm._name, \"id\": itm._id });\n    }\n}\n\nnode.log(payload.id + \",\" + payload.name + \",\" + payload.short_desc + \",\" + payload.long_desc + \",\" + JSON.stringify(payload.assigned_assets));\n\nreturn { payload: payload };",
+    "func": "const payload = {};\n\npayload.id = msg._id;\npayload.name = msg.name;\npayload.short_desc = msg.hasOwnProperty('short_description') ? msg.short_description : \"\";\npayload.long_desc  = msg.hasOwnProperty('long_description') ? msg.long_description : \"\";\npayload.assigned_assets = [];\n\nif (msg.hasOwnProperty('assigned_assets')) {\n    for (let i = 0; i < msg.assigned_assets.items.length; i++) {\n        const itm = msg.assigned_assets.items[i];\n        payload.assigned_assets.push({ \"type\": itm._type, \"name\": itm._name, \"id\": itm._id });\n    }\n}\n\nreturn { payload: payload };",
     "outputs": 1,
     "noerr": 0,
-    "x": 496,
-    "y": 271,
+    "x": 460,
+    "y": 179,
     "wires": [
       [
-        "9d746456.6eb31"
+        "df84cb0.eb09038"
       ]
     ]
   },
   {
-    "id": "9d746456.6eb31",
+    "id": "df84cb0.eb09038",
     "type": "file",
-    "z": "13a03a0d.38d08e",
+    "z": "8dd27fec.9c3dc",
     "name": "",
     "filename": "TermsAndRelationships.json",
     "appendNewline": true,
     "createDir": false,
     "overwriteFile": "false",
-    "x": 717,
-    "y": 271,
+    "x": 682,
+    "y": 179,
     "wires": []
   },
   {
-    "id": "f6a6970f.8a814",
-    "type": "IGC search",
-    "z": "13a03a0d.38d08e",
-    "name": "Search IGC",
-    "server": "8747d52d.80cfe",
+    "id": "235b3e32.ac6d22",
+    "type": "IGC in",
+    "z": "8dd27fec.9c3dc",
+    "name": "Get next page",
+    "server": "8ed2d18a.14748",
+    "search": "_url_",
     "query": "",
-    "x": 153,
-    "y": 261,
+    "url": "",
+    "rid": "",
+    "ridtype": "",
+    "ridproperties": "",
+    "x": 352,
+    "y": 298,
     "wires": [
       [
-        "f216a1c1.072f9"
+        "1adade39.6d3afa"
       ]
     ]
   },
   {
-    "id": "df5716f.c4d9368",
-    "type": "IGC get",
-    "z": "13a03a0d.38d08e",
-    "name": "Get next page",
-    "server": "8747d52d.80cfe",
-    "url": "",
-    "x": 361,
-    "y": 447,
+    "id": "cf38780b.47dd28",
+    "type": "change",
+    "z": "8dd27fec.9c3dc",
+    "name": "",
+    "rules": [
+      {
+        "t": "set",
+        "p": "query",
+        "pt": "msg",
+        "to": "payload",
+        "tot": "msg"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 157,
+    "y": 109,
     "wires": [
       [
-        "f216a1c1.072f9"
+        "e5403847.44885"
       ]
     ]
   }
