@@ -126,7 +126,7 @@ If **RID** is empty, will look for the RID as a string in `msg.rid`.
 
 ## Example flow
 
-The example flow pasted below retrieves key term details (ID, name, short description, long description, and related assets) for all terms published in IGC:
+The example flow pasted below retrieves key term details (ID, name, short description, long description, and related assets) for all terms published in IGC, iterating through multiple pages of results:
 
 ```
 [
