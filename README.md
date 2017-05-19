@@ -1,32 +1,132 @@
-# README
-NodeRED nodes for integrating with IBM Information Governance Catalog
+# node-red-contrib-ibm-igc
 
-## Testing locally
+This module provides a set of nodes in Node-RED for integrating with IBM Information Governance Catalog ("IGC").
 
-To test locally (before we commit into the open), do the following:
+## Pre-requisites
 
-### Prerequisites
+In addition to Node-RED, the module relies on two other NPM packages: `ibm-iis-commons` and `ibm-igc-rest`.
 
-You'll need NodeJS (and NPM) installed already.  Download from https://nodejs.org, or use your favourite package manager (i.e. [Homebrew](https://brew.sh)).
+## Install
 
-NodeRED must also be installed locally -- simplest way to do this is to install it globally by running:
+To install the stable version run the following command in your Node-RED user directory (typically `~/.node-red`):
 
-```sudo npm install -g node-red```
+`npm i node-red-contrib-ibm-igc`
 
-### Adding the IGC integration
+Open your Node-RED instance and you should have IGC nodes available in the palette (under `storage`) and a new config node available one you drag one into a flow.
 
-1. Clone this repository to your local machine
-2. Run the command `sudo npm link` from within the cloned directory
-3. Navigate into your local NodeRED directory (by default, it's `~/.node-red`)
-4. Run `npm link node-red-contrib-ibm-igc` from within the directory of (3)
-5. Startup NodeRED (i.e. `node-red`)
-6. Navigate to the UI (by default, http://localhost:1880/)
+## IGC in
 
-You should find a number of nodes under the "storage" category related to IGC.
+Input can be drawn from Information Governance Catalog in the following ways.  This uses both GET- and POST-based Information Governance Catalog REST APIs to retrieve metadata using the most efficient means possible.
+
+In general, the set of results for the retrieval will have a structure of `{ items: [], paging: {} }`, where only the first 10 items retrieved will be included in the initial payload.  The `paging` property provides sufficient detail to retrieve the subsequent page of results each time, and can be passed-on using the URL Passthrough option described below.  When only a single (or very few) assets are retrieved, of course, the `paging` portion may be absent -- so it is worth checking for it via a Function node if you plan on making use of it.
+
+### Complex Query
+
+Using the Complex Query option, you can run an arbitrary search.  For example, you can pass a **Query** like this:
+
+```
+{
+  "properties": ["name"],
+  "types": ["term"],
+  "where":
+  {
+    "operator": "and",
+    "conditions": [
+      {
+        "property": "modified_on",
+        "operator": ">=",
+        "value": "1483232400"
+      }
+    ]
+  }
+}
+```
+
+to get a listing of the names of all business terms that were modified on or after January 1, 2017 (value provided as UNIX time).
+
+More detailed options on query constructs can be found in the attachments linked to the following tech-notes:
+
+* [Tips, Tricks & Time-Savers Guide](http://www.ibm.com/support/docview.wss?uid=swg27047054)
+* [Sample REST API Calls and Use Case Descriptions Guide](http://www.ibm.com/support/docview.wss?uid=swg27047059)
+
+If **Query** is empty, will look for a query as a JSON object in `msg.query`.
+
+### URL Passthrough
+
+Using the URL Passthrough mode allows you to invoke any arbitrary GET-based Information Governance Catalog REST API URL.  For example, you can pass any **URL** returned by a previous query's `next` property (for pagination), or the `_url` property (to get more details on that particular asset).
+
+If **URL** is empty, will look for a URL as a string in `msg.url`.
+
+(Note: if specific host details are supplied in the URL they will be overridden by the Server selected via the config node for IGC -- this is necessary to ensure credentials are passed appropriately).
+
+### RID
+
+Using the RID option you can retrieve a single asset's details by its unique Information Governance Catalog ID (RID).  You can also (optionally) provide a list of specific **Properties** to retrieve for the asset: in general this is a good practice, as it is more efficient than retrieving all properties.  Note that when doing so, specifying the **Type** of the asset then also becomes mandatory.
+
+If **RID** is empty, will look for a RID as a string in `msg.rid`; if **Properties** is empty, will look for properties as an array in `msg.properties`; if **Type** is empty, will look for the type as a string in `msg.type`.
+
+## IGC out
+
+Output can be stored into Information Governance Catalog in the following ways.  This uses the appropriate Information Governance Catalog REST API to make updates to metadata, whether creating new assets, updating existing assets, or deleting existing assets.  All operations will push their results out to the output port for optional consumption; if any error has occured, an error will be raised with the details -- use a Catch node to capture these.
+
+### Create
+
+The Create operation should only be used when an asset does not already exist in IGC with the details that need to be stored.  If the asset already exists, and you simply wish to set some additional properties on the asset (or replace existing ones), use the Update operation instead.  If you attempt to Create an asset that already exists, an error will result.
+
+Using the Create operation, you need to provide both the **Type** of the asset to create and the **Details** of the property values to set within it.  Note that different assets have different required properties as part of their creation; in general this will require at least the _name_ property.
+
+The output link will contain the RID of the created asset, as a string.
+
+For example, use a **Type** of _category_ and provide **Details** like this:
+
+```
+{
+  "name": "Test Category"
+}
+```
+
+to create a new top-level category named _"Test Category"_.
+
+If **Type** is empty, will look for the type as a string in `msg.type`; if **Details** is empty, will look for the detailed properties as a JSON object in `msg.details`.
+
+### Update
+
+The Update operation expects a unique IGC identifier (**RID**) to specify which specific piece of metadata to update.  **Details** are also needed to define what on that piece of metadata should be updated.  This second parameter is expected to be a JSON object, and should contain only the properties that need to change on the asset.
+
+The output link will be the changed properties of the asset (typically matching the provided **Details**), as a JSON object.
+
+For example, you can use the following **Details**:
+
+```
+{
+  "short_description": "a new short description",
+  "labels": {
+    "items": [ "6662c0f2.22257cc4.p864keo17.vbbgrpe.26j4m1.mgcmn0lh4fb2ggdjb7ujo", "6662c0f2.22257cc4.p864keo18.0o97qi8.f1ar57.dmjlsjtjghbifmi6p2tc4" ],
+    "mode": "add"
+  }
+}
+```
+
+to update the short description of the piece of metadata, and also add (append) two new labels.
+
+Note:
+* related items must be specified by their **RID**
+* using `replace` as the _mode_ will overwrite any existing relationships
+* (if you use `replace` as the _mode_ and provide an empty array, all of those relationships will be removed from that asset)
+
+If **RID** is empty, will look for the RID as a string in `msg.rid`; if **Details** is empty, will look for the detailed properties as a JSON object in `msg.details`.
+
+### Delete
+
+Like the Update operation, the Delete operation requires a unique IGC identifier (**RID**) to specify which specific piece of metadata to delete.  No Details object is needed as the entire asset (and all of its properties) will be deleted.
+
+On successful deletion, the standard output will be empty (just a payload containing only Node-RED's *_msgid*).
+
+If **RID** is empty, will look for the RID as a string in `msg.rid`.
 
 ## Example flow
 
-The example flow pasted below retrieves key term details (ID, name, short description, long description, and related assets) for all terms that have been modified since January 1, 2017:
+The example flow pasted below retrieves key term details (ID, name, short description, long description, and related assets) for all terms published in IGC:
 
 ```
 [
@@ -39,9 +139,9 @@ The example flow pasted below retrieves key term details (ID, name, short descri
     "id": "8ed2d18a.14748",
     "type": "ibm-igc",
     "z": "",
-    "host": "cgroteDL",
+    "host": "yourHostForIGC",
     "port": "9445",
-    "name": ""
+    "name": "IGC_HOST"
   },
   {
     "id": "e5403847.44885",
@@ -69,7 +169,7 @@ The example flow pasted below retrieves key term details (ID, name, short descri
     "z": "8dd27fec.9c3dc",
     "name": "Query",
     "topic": "",
-    "payload": "{     \"properties\": [       \"name\",       \"short_description\",       \"long_description\",       \"assigned_assets\"     ],     \"types\": [       \"term\"     ],     \"where\": {       \"operator\": \"and\",       \"conditions\": [         {           \"property\": \"modified_on\",           \"operator\": \">=\",           \"value\": \"1483232400\"         }       ]     }   }",
+    "payload": "{     \"properties\": [       \"name\",       \"short_description\",       \"long_description\",       \"assigned_assets\"     ],     \"types\": [       \"term\"     ],        }",
     "payloadType": "json",
     "repeat": "",
     "crontab": "",
@@ -196,4 +296,10 @@ The example flow pasted below retrieves key term details (ID, name, short descri
 ]
 ```
 
-(Note that you'll need to open the "Configuration nodes" from NodeRED's UI menu and double-click the "cgroteDL" configuration under "On all flows" to change the details to your own host -- hostname, port, username and password.  As long as you can remotely access the server (VPN or otherwise) you should still be able to run the nodes and NodeRED from your local machine.)
+Note that you'll need to open the "Configuration nodes" from Node-RED's UI menu and double-click the "IGC_HOST" configuration under "On all flows" to change the details to your own -- hostname, port, username and password.  There will need to be some form of network connectivity from where Node-RED is running to the host and port you define there in order for the nodes to work.
+
+## Other potentially useful resources
+
+For exploring the REST APIs offered by IBM Information Governance Catalog, you might also want to explore the [ibm-igc-postman](https://github.com/cmgrote/ibm-igc-postman) project containing collections for [Postman](https://www.getpostman.com), to experiment further with the various REST API end-points.  And as indicated earlier (linking again for convenience):
+* [Tips, Tricks & Time-Savers Guide](http://www.ibm.com/support/docview.wss?uid=swg27047054)
+* [Sample REST API Calls and Use Case Descriptions Guide](http://www.ibm.com/support/docview.wss?uid=swg27047059)
