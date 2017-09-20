@@ -12,7 +12,7 @@ To install the stable version run the following command in your Node-RED user di
 
 `npm i node-red-contrib-ibm-igc`
 
-Open your Node-RED instance and you should have IGC nodes available in the palette (under `storage`) and a new config node available one you drag one into a flow.
+Open your Node-RED instance and you should have IGC nodes available in the palette (under `storage`) and a new config node available once you drag one into a flow.
 
 ## IGC in
 

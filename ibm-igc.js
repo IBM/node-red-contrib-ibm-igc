@@ -34,7 +34,6 @@ module.exports = function(RED) {
     if ((credentials) && (credentials.hasOwnProperty("pass"))) { this.password = credentials.pass; }
     const restConnect = new commons.RestConnection(this.username, this.password, this.host, this.port, "", false);
     igcrest.setConnection(restConnect);
-    igcrest.disableThrowingErrors();
   }
   RED.nodes.registerType("ibm-igc", IGCNode, {
     credentials: {
@@ -67,8 +66,10 @@ module.exports = function(RED) {
       if (node.search === "_query_") {
 
         const qToRun = (typeof this.query === 'string' && this.query !== '') ? JSON.parse(this.query) : msg.query;
-        igcrest.search(qToRun, function(err, result) {
-          _sendResults(node, err, msg, result);
+        igcrest.search(qToRun).then(function(result) {
+          _sendResults(node, null, msg, result);
+        }, function(err) {
+          _sendResults(node, err, msg, null);
         });
 
       } else if (node.search === "_id_") {
@@ -82,13 +83,17 @@ module.exports = function(RED) {
         }
 
         if (properties.length === 0 || (properties.length === 1 && properties[0] === '')) {
-          igcrest.getAssetById(rid, function(err, result) {
-            _sendResults(node, err, msg, result);
+          igcrest.getAssetById(rid).then(function(result) {
+            _sendResults(node, null, msg, result);
+          }, function(err) {
+            _sendResults(node, err, msg, null);
           });
         } else {
           const type = (typeof msg.type === "string") ? msg.type : this.ridtype;
-          igcrest.getAssetPropertiesById(rid, type, properties, 10, true, function(err, result) {
-            _sendResults(node, err, msg, result);
+          igcrest.getAssetPropertiesById(rid, type, properties, 10, true).then(function(result) {
+            _sendResults(node, null, msg, result);
+          }, function(err) {
+            _sendResults(node, err, msg, null);
           });
         }
 
@@ -99,8 +104,10 @@ module.exports = function(RED) {
         if (callURL.indexOf('https://') !== -1) {
           callURL = callURL.substring(callURL.indexOf('/ibm/iis/igc-rest'));
         }
-        igcrest.getOther(callURL, 200, function(err, result) {
-          _sendResults(node, err, msg, result);
+        igcrest.getOther(callURL, 200).then(function(result) {
+          _sendResults(node, null, msg, result);
+        }, function(err) {
+          _sendResults(node, err, msg, null);
         });
 
       }
@@ -134,23 +141,29 @@ module.exports = function(RED) {
 
         const type = (typeof this.assettype === 'string' && this.assettype !== '') ? this.assettype : msg.type;
         const detailsJSON = (typeof this.details === 'string' && this.details !== '') ? JSON.parse(this.details) : msg.details;
-        igcrest.create(type, detailsJSON, function(err, result) {
-          _sendResults(node, err, msg, result);
+        igcrest.create(type, detailsJSON).then(function(result) {
+          _sendResults(node, null, msg, result);
+        }, function(err) {
+          _sendResults(node, err, msg, null);
         });
 
       } else if (node.operation === "update") {
 
         const rid = (typeof this.rid === 'string' && this.rid !== '') ? this.rid : msg.rid;
         const detailsJSON = (typeof this.details === 'string' && this.details !== '') ? JSON.parse(this.details) : msg.details;
-        igcrest.update(rid, detailsJSON, function(err, result) {
-          _sendResults(node, err, msg, result);
+        igcrest.update(rid, detailsJSON).then(function(result) {
+          _sendResults(node, null, msg, result);
+        }, function(err) {
+          _sendResults(node, err, msg, null);
         });
 
       } else if (node.operation === "delete") {
 
         const rid = (typeof this.rid === 'string' && this.rid !== '') ? this.rid : msg.rid;
-        igcrest.deleteAssetById(rid, function(err, result) {
-          _sendResults(node, err, msg, result);
+        igcrest.deleteAssetById(rid).then(function(result) {
+          _sendResults(node, null, msg, result);
+        }, function(err) {
+          _sendResults(node, err, msg, null);
         });
 
       }
