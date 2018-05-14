@@ -34,10 +34,10 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/cmgrote/node-red-contrib-ibm-igc.git"
+    "url": "https://github.com/IBM/node-red-contrib-ibm-igc.git"
   },
   "bugs": {
-    "url": "https://github.com/cmgrote/node-red-contrib-ibm-igc/issues"
+    "url": "https://github.com/IBM/node-red-contrib-ibm-igc/issues"
   },
-  "homepage": "https://github.com/cmgrote/node-red-contrib-ibm-igc"
+  "homepage": "https://github.com/IBM/node-red-contrib-ibm-igc"
 }
